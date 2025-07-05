@@ -24,7 +24,7 @@ def update_task(db: Session, task_id: int, task: schemas.TaskUpdate):
     if db_task is None:
         return None
     
-    update_data = task.dict(exclude_unset=True)
+    update_data = task.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_task, key, value)
     
