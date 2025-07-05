@@ -8,6 +8,31 @@ class Priority(IntEnum):
     MEDIUM = 2
     LOW = 3
 
+class ApiKeyBase(BaseModel):
+    name: Optional[str] = None
+
+class ApiKeyCreate(ApiKeyBase):
+    pass
+
+class ApiKey(ApiKeyBase):
+    id: int
+    key_hash: str
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ApiKeyResponse(BaseModel):
+    id: int
+    name: Optional[str] = None
+    key: str  # 生成されたAPIキー（平文）
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class CategoryBase(BaseModel):
     name: str
     color: Optional[str] = None

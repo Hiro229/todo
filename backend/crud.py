@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_
 from typing import Optional
 import models, schemas
+import hashlib
+import secrets
 
 # Task CRUD operations
 def get_tasks(db: Session, search: Optional[str] = None, category_id: Optional[int] = None, 
@@ -113,3 +115,68 @@ def delete_category(db: Session, category_id: int):
     db.delete(db_category)
     db.commit()
     return True
+
+# API Key CRUD operations
+def generate_api_key() -> str:
+    """新しいAPIキーを生成"""
+    return secrets.token_urlsafe(32)
+
+def hash_api_key(api_key: str) -> str:
+    """あAPIキーのハッシュを生成"""
+    return hashlib.sha256(api_key.encode()).hexdigest()
+
+def create_api_key(db: Session, api_key_create: schemas.ApiKeyCreate) -> tuple[models.ApiKey, str]:
+    """新しいAPIキーを作成"""
+    api_key = generate_api_key()
+    key_hash = hash_api_key(api_key)
+    
+    db_api_key = models.ApiKey(
+        key_hash=key_hash,
+        name=api_key_create.name
+    )
+    db.add(db_api_key)
+    db.commit()
+    db.refresh(db_api_key)
+    
+    return db_api_key, api_key
+
+def get_api_keys(db: Session):
+    """全APIキーを取得"""
+    return db.query(models.ApiKey).order_by(desc(models.ApiKey.created_at)).all()
+
+def get_api_key_by_hash(db: Session, key_hash: str):
+    """ハッシュでAPIキーを取得"""
+    return db.query(models.ApiKey).filter(
+        models.ApiKey.key_hash == key_hash,
+        models.ApiKey.is_active == True
+    ).first()
+
+def verify_api_key(db: Session, api_key: str) -> Optional[models.ApiKey]:
+    """あAPIキーを検証"""
+    key_hash = hash_api_key(api_key)
+    return get_api_key_by_hash(db, key_hash)
+
+def delete_api_key(db: Session, api_key_id: int):
+    """あAPIキーを削除"""
+    db_api_key = db.query(models.ApiKey).filter(models.ApiKey.id == api_key_id).first()
+    if db_api_key is None:
+        return False
+    
+    db.delete(db_api_key)
+    db.commit()
+    return True
+
+def toggle_api_key_status(db: Session, api_key_id: int):
+    """あAPIキーの有効/無効を切り替え"""
+    db_api_key = db.query(models.ApiKey).filter(models.ApiKey.id == api_key_id).first()
+    if db_api_key is None:
+        return None
+    
+    # 現在の状態を取得して反転
+    new_status = not bool(db_api_key.is_active)
+    db.query(models.ApiKey).filter(models.ApiKey.id == api_key_id).update(
+        {"is_active": new_status}
+    )
+    db.commit()
+    db.refresh(db_api_key)
+    return db_api_key

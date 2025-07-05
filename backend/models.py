@@ -5,6 +5,15 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key_hash = Column(String(255), nullable=False, unique=True, index=True)
+    name = Column(String(100), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 class Category(Base):
     __tablename__ = "categories"
 

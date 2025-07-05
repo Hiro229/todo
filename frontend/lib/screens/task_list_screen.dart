@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/task.dart';
 import '../services/api_service.dart';
 import 'task_form_screen.dart';
+import 'api_key_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -185,6 +186,26 @@ class _TaskListScreenState extends State<TaskListScreen> {
         actions: [
           IconButton(icon: const Icon(Icons.filter_list), onPressed: _showFilterDialog),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'api_key':
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const ApiKeyScreen()),
+                  );
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'api_key',
+                child: ListTile(
+                  leading: Icon(Icons.key),
+                  title: Text('API キー管理'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: Column(
