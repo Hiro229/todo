@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/task_list_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
   runApp(const TodoApp());
@@ -16,7 +16,7 @@ class TodoApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const TaskListScreen(),
+      home: const SplashScreen(),
     );
   }
 }

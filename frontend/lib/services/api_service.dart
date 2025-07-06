@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/task.dart';
+import 'auth_service.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:8000';
@@ -41,7 +42,8 @@ class ApiService {
       }
 
       final uri = Uri.parse('$apiUrl/api/tasks').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: headers);
+      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final response = await http.get(uri, headers: authHeaders);
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);
@@ -57,9 +59,10 @@ class ApiService {
   // 新規タスクを作成
   static Future<Task> createTask(TaskCreate taskCreate) async {
     try {
+      final authHeaders = await AuthService.getValidatedAuthHeaders();
       final response = await http.post(
         Uri.parse('$apiUrl/api/tasks'),
-        headers: headers,
+        headers: authHeaders,
         body: json.encode(taskCreate.toJson()),
       );
 
@@ -76,9 +79,10 @@ class ApiService {
   // 特定のタスクを取得
   static Future<Task> getTask(int id) async {
     try {
+      final authHeaders = await AuthService.getValidatedAuthHeaders();
       final response = await http.get(
         Uri.parse('$apiUrl/api/tasks/$id'),
-        headers: headers,
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -94,9 +98,10 @@ class ApiService {
   // タスクを更新
   static Future<Task> updateTask(int id, TaskUpdate taskUpdate) async {
     try {
+      final authHeaders = await AuthService.getValidatedAuthHeaders();
       final response = await http.put(
         Uri.parse('$apiUrl/api/tasks/$id'),
-        headers: headers,
+        headers: authHeaders,
         body: json.encode(taskUpdate.toJson()),
       );
 
@@ -113,9 +118,10 @@ class ApiService {
   // タスクを削除
   static Future<bool> deleteTask(int id) async {
     try {
+      final authHeaders = await AuthService.getValidatedAuthHeaders();
       final response = await http.delete(
         Uri.parse('$apiUrl/api/tasks/$id'),
-        headers: headers,
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -131,9 +137,10 @@ class ApiService {
   // カテゴリ関連のAPI
   static Future<List<Category>> getCategories() async {
     try {
+      final authHeaders = await AuthService.getValidatedAuthHeaders();
       final response = await http.get(
         Uri.parse('$apiUrl/api/categories'),
-        headers: headers,
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -149,9 +156,10 @@ class ApiService {
 
   static Future<Category> createCategory(CategoryCreate categoryCreate) async {
     try {
+      final authHeaders = await AuthService.getValidatedAuthHeaders();
       final response = await http.post(
         Uri.parse('$apiUrl/api/categories'),
-        headers: headers,
+        headers: authHeaders,
         body: json.encode(categoryCreate.toJson()),
       );
 
@@ -167,9 +175,10 @@ class ApiService {
 
   static Future<bool> deleteCategory(int id) async {
     try {
+      final authHeaders = await AuthService.getValidatedAuthHeaders();
       final response = await http.delete(
         Uri.parse('$apiUrl/api/categories/$id'),
-        headers: headers,
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
