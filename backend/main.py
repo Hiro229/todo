@@ -14,10 +14,15 @@ from security import (
 )
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from config.settings import settings
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="TODO App API", version="3.0.0")
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    debug=settings.debug
+)
 
 # レート制限の設定
 app.state.limiter = limiter
@@ -30,10 +35,10 @@ app.middleware("http")(limit_upload_size)
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.cors_origins,
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=settings.cors_allow_methods,
+    allow_headers=settings.cors_allow_headers,
 )
 
 # データベース依存関数
@@ -49,11 +54,20 @@ app.include_router(auth_router)
 
 @app.get("/")
 def read_root():
-    return {"message": "TODO App API v3.0 - Phase 3 JWT Authentication"}
+    return {
+        "message": f"{settings.app_name} v{settings.app_version} - Phase 4 Environment System",
+        "environment": settings.environment,
+        "debug": settings.debug
+    }
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "timestamp": "2025-07-06T12:00:00Z"}
+    return {
+        "status": "healthy",
+        "environment": settings.environment,
+        "version": settings.app_version,
+        "timestamp": "2025-07-06T12:00:00Z"
+    }
 
 # Task endpoints
 @app.get("/api/tasks", response_model=List[schemas.Task])
@@ -173,4 +187,9 @@ def delete_category(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app, 
+        host=settings.host, 
+        port=settings.port,
+        reload=settings.debug
+    )

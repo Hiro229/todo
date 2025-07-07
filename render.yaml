@@ -1,0 +1,60 @@
+services:
+  # Backend API Service
+  - type: web
+    name: todo-app-api
+    plan: free
+    runtime: python
+    region: oregon
+    buildCommand: |
+      cd backend &&
+      pip install --upgrade pip &&
+      pip install -r requirements.txt
+    startCommand: |
+      cd backend &&
+      uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: staging
+      - key: DATABASE_URL
+        value: postgresql://user:password@host:5432/database
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: APP_NAME
+        value: "TODO App API"
+      - key: APP_VERSION
+        value: "4.0.0-staging"
+      - key: CORS_ORIGINS
+        value: '["https://your-frontend-url.onrender.com"]'
+      - key: MAX_REQUEST_SIZE
+        value: "1048576"
+      - key: RATE_LIMIT_AUTH
+        value: "10/minute"
+      - key: RATE_LIMIT_API
+        value: "100/minute"
+    healthCheckPath: /health
+
+  # Frontend Service (Future)
+  # - type: web
+  #   name: todo-app-frontend
+  #   plan: free
+  #   runtime: static
+  #   region: oregon
+  #   buildCommand: |
+  #     cd frontend &&
+  #     flutter build web
+  #   staticPublishPath: frontend/build/web
+  #   envVars:
+  #     - key: FLUTTER_WEB_RENDERER
+  #       value: html
+  #     - key: API_BASE_URL
+  #       value: https://todo-app-api.onrender.com
+
+# Optional: Cron jobs for maintenance
+# jobs:
+#   - type: cron
+#     name: cleanup-expired-sessions
+#     schedule: "0 2 * * *"  # Daily at 2 AM
+#     buildCommand: cd backend && pip install -r requirements.txt
+#     startCommand: cd backend && python -c "print('Session cleanup placeholder')"

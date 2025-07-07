@@ -34,13 +34,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
         // 短い遅延の後、メイン画面に遷移
         await Future.delayed(const Duration(milliseconds: 500));
-        
+
         if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const TaskListScreen(),
-            ),
-          );
+          Navigator.of(
+            context,
+          ).pushReplacement(MaterialPageRoute(builder: (context) => const TaskListScreen()));
         }
       } else {
         setState(() {
@@ -60,19 +58,38 @@ class _SplashScreenState extends State<SplashScreen> {
     if (mounted) {
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _initializeApp(); // 再試行
-              },
-              child: const Text('Retry'),
+        builder:
+            (context) => AlertDialog(
+              title: const Text('接続エラー'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(message),
+                  const SizedBox(height: 16),
+                  const Text('トラブルシューティング：', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('• WiFi接続を確認してください'),
+                  const Text('• 開発用サーバーが起動していることを確認'),
+                  const Text('• アプリの設定でIPアドレスを確認'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('閉じる'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _initializeApp(); // 再試行
+                  },
+                  child: const Text('再試行'),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
   }
@@ -85,11 +102,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.task_alt,
-              size: 80,
-              color: Theme.of(context).colorScheme.onPrimary,
-            ),
+            Icon(Icons.task_alt, size: 80, color: Theme.of(context).colorScheme.onPrimary),
             const SizedBox(height: 24),
             Text(
               'TODO App',
@@ -99,9 +112,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 48),
-            CircularProgressIndicator(
-              color: Theme.of(context).colorScheme.onPrimary,
-            ),
+            CircularProgressIndicator(color: Theme.of(context).colorScheme.onPrimary),
             const SizedBox(height: 16),
             Text(
               _statusMessage,

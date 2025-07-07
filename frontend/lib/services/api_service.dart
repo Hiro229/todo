@@ -1,19 +1,11 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/task.dart';
+import '../config/app_config.dart';
 import 'auth_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8000';
-  
-  // iOSシミュレータの場合はlocalhost、Android エミュレータの場合は10.0.2.2を使用
-  static String get apiUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
-    }
-    return baseUrl;
-  }
+  static String get apiUrl => AppConfig.apiBaseUrl;
 
   static const Map<String, String> headers = {
     'Content-Type': 'application/json',

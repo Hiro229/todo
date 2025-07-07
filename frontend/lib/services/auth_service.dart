@@ -3,16 +3,11 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import '../config/app_config.dart';
+import '../config/network_utils.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://localhost:8000';
-  
-  static String get apiUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
-    }
-    return baseUrl;
-  }
+  static String get apiUrl => AppConfig.apiBaseUrl;
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(
@@ -192,8 +187,8 @@ class AuthService {
       final exp = payload['exp'] as int;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       
-      // 有効期限の1時間前になったら更新
-      const refreshThreshold = 3600; // 1時間（秒）
+      // 有効期限の設定された時間前になったら更新
+      final refreshThreshold = AppConfig.tokenRefreshThreshold;
       
       if (exp - now < refreshThreshold) {
         // トークンを更新
@@ -212,22 +207,86 @@ class AuthService {
   // 自動認証 - アプリ起動時に呼び出す
   static Future<bool> autoAuthenticate() async {
     try {
+      print('AutoAuthenticate: Starting authentication process');
+      print('AutoAuthenticate: API URL = $apiUrl');
+      
+      // 開発環境では利用可能なサーバーを動的に検出
+      if (AppConfig.environment == Environment.development) {
+        print('AutoAuthenticate: Attempting to find available dev server');
+        final dynamicApiUrl = await AppConfig.getAvailableDevApiUrl();
+        if (dynamicApiUrl != null && dynamicApiUrl != apiUrl) {
+          print('AutoAuthenticate: Found available server at: $dynamicApiUrl');
+          // 動的に検出したURLを使用して認証を試行
+          final result = await _authenticateWithUrl(dynamicApiUrl);
+          if (result.success) {
+            print('AutoAuthenticate: Authentication successful with dynamic URL');
+            return true;
+          }
+        }
+      }
+      
       // 既存のトークンをチェック
       if (await isTokenValid()) {
+        print('AutoAuthenticate: Valid token found, verifying...');
         final status = await verifyAuth();
         if (status.authenticated) {
+          print('AutoAuthenticate: Token verified successfully');
           // トークンの更新が必要かチェック
           await refreshTokenIfNeeded();
           return true;
+        } else {
+          print('AutoAuthenticate: Token verification failed: ${status.error}');
         }
+      } else {
+        print('AutoAuthenticate: No valid token found');
       }
 
       // 既存のトークンが無効な場合は新しく認証
+      print('AutoAuthenticate: Attempting new authentication');
       final result = await authenticate();
+      if (result.success) {
+        print('AutoAuthenticate: New authentication successful');
+      } else {
+        print('AutoAuthenticate: New authentication failed: ${result.error}');
+      }
       return result.success;
     } catch (e) {
-      // エラーログは本番環境では適切なログフレームワークを使用すべき
+      print('AutoAuthenticate: Exception occurred: $e');
       return false;
+    }
+  }
+
+  // 指定されたURLで認証を試行
+  static Future<AuthResult> _authenticateWithUrl(String baseUrl) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/simple'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final token = data['access_token'] as String;
+        final expiresIn = data['expires_in'] as int;
+
+        await _saveToken(token);
+
+        return AuthResult(
+          success: true,
+          token: token,
+          expiresIn: expiresIn,
+        );
+      } else {
+        return AuthResult(
+          success: false,
+          error: 'Authentication failed: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        error: 'Network error: $e',
+      );
     }
   }
 
