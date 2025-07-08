@@ -11,8 +11,9 @@
 ## 重要な注意事項
 - **Python版**: このアプリケーションは**Python 3.12**で動作するように設定されています
 - **依存関係**: `requirements.txt`はRender環境での安定性を考慮して最適化されています
-- **`.python-version`**ファイルでPython 3.12を明示的に指定しています
-- **pydantic-coreエラー対策**: Python 3.13でのビルドエラーを回避するため、pydantic 2.4.0を使用
+- **Python版指定**: `runtime.txt`ファイルでPython 3.12.7を明示的に指定しています
+- **`.python-version`とruntime.txt**: Renderでは`runtime.txt`が優先されます
+- **pydantic-coreエラー対策**: Python 3.13でのビルドエラーを回避するため、pydantic 2.3.0を使用
 
 ## データベース情報
 既に設定済みのPostgreSQLデータベース:
@@ -89,6 +90,7 @@ Renderダッシュボードで以下の環境変数を設定:
 
 | 変数名 | 値 | 説明 |
 |--------|-----|------|
+| `PYTHON_VERSION` | `3.12.7` | Python版指定 |
 | `ENVIRONMENT` | `production` | 本番環境フラグ |
 | `DATABASE_URL` | `postgresql://todo_user:[パスワード]@dpg-d1ks3615pdvs73b82g7g-a:5432/todo_db_22qu` | データベース接続URL |
 | `JWT_SECRET_KEY` | （自動生成） | JWT暗号化キー |
@@ -151,14 +153,20 @@ curl https://your-service-name.onrender.com/
 2. **ビルドエラー**
    - `requirements.txt`のパッケージが正しいか確認
    - Python版数の互換性確認
-   - **Python 3.13エラー**: `.python-version`ファイルで3.12を指定済みです
-   - **pydantic-coreエラー**: requirements.txtは既にRender環境で動作するように最適化されています
+   - **Python 3.13エラー**: `runtime.txt`ファイルでPython 3.12.7を指定済みです
+   - **pydantic-coreエラー**: requirements.txtは既にRender環境で動作するように最適化されています（pydantic 2.3.0を使用）
+   - **Rustコンパイルエラー**: より古いバージョンのpydanticを使用してRustコンパイルを回避
 
-3. **起動エラー**
+3. **Python版エラー**
+   - `runtime.txt`ファイルでPython 3.12.7を指定
+   - 環境変数`PYTHON_VERSION`を設定
+   - `.python-version`ファイルよりも`runtime.txt`が優先されます
+
+4. **起動エラー**
    - `start.sh`が実行可能権限を持っているか確認
    - 環境変数`ENVIRONMENT`が正しく設定されているか確認
 
-4. **CORS エラー**
+5. **CORS エラー**
    - `CORS_ORIGINS`設定を確認
    - フロントエンドドメインが正しく設定されているか確認
 
