@@ -8,6 +8,12 @@
 - Render.comアカウント
 - データベースが既に設定済み
 
+## 重要な注意事項
+- **Python版**: このアプリケーションは**Python 3.12**で動作するように設定されています
+- **依存関係**: `requirements.txt`はRender環境での安定性を考慮して最適化されています
+- **`.python-version`**ファイルでPython 3.12を明示的に指定しています
+- **pydantic-coreエラー対策**: Python 3.13でのビルドエラーを回避するため、pydantic 2.4.0を使用
+
 ## データベース情報
 既に設定済みのPostgreSQLデータベース:
 - **ホスト名**: `dpg-d1ks3615pdvs73b82g7g-a`
@@ -145,6 +151,8 @@ curl https://your-service-name.onrender.com/
 2. **ビルドエラー**
    - `requirements.txt`のパッケージが正しいか確認
    - Python版数の互換性確認
+   - **Python 3.13エラー**: `.python-version`ファイルで3.12を指定済みです
+   - **pydantic-coreエラー**: requirements.txtは既にRender環境で動作するように最適化されています
 
 3. **起動エラー**
    - `start.sh`が実行可能権限を持っているか確認
