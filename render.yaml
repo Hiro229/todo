@@ -1,24 +1,25 @@
 services:
-  # Backend API Service
   - type: web
-    name: todo-app-api
-    plan: free
+    name: todo-app-api-production
+    plan: starter
     runtime: python
     region: oregon
     buildCommand: |
       cd backend &&
-      pip install --upgrade pip &&
-      pip install -r requirements.txt
+      chmod +x start.sh &&
+      pip install --upgrade pip setuptools wheel &&
+      pip install -r requirements.txt --no-cache-dir
     startCommand: |
       cd backend &&
+      chmod +x start.sh &&
       ./start.sh
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.7"
       - key: ENVIRONMENT
-        value: staging
+        value: production
+      - key: PORT
+        value: "10000"
       - key: DATABASE_URL
-        value: postgresql://user:password@host:5432/database
+        value: postgresql://todo_user:[ACTUAL_PASSWORD]@dpg-d1ks3615pdvs73b82g7g-a.oregon-postgres.render.com:5432/todo_db_22qu
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -26,37 +27,19 @@ services:
       - key: APP_NAME
         value: "TODO App API"
       - key: APP_VERSION
-        value: "4.0.0-staging"
+        value: "4.0.0"
       - key: CORS_ORIGINS
-        value: '["https://your-frontend-url.onrender.com"]'
+        value: '["https://your-frontend-url.onrender.com", "http://localhost:3000"]'
       - key: MAX_REQUEST_SIZE
         value: "1048576"
       - key: RATE_LIMIT_AUTH
-        value: "10/minute"
+        value: "5/minute"
       - key: RATE_LIMIT_API
-        value: "100/minute"
+        value: "50/minute"
+      - key: JWT_ALGORITHM
+        value: "HS256"
+      - key: ACCESS_TOKEN_EXPIRE_HOURS
+        value: "12"
+      - key: HOST
+        value: "0.0.0.0"
     healthCheckPath: /health
-
-  # Frontend Service (Future)
-  # - type: web
-  #   name: todo-app-frontend
-  #   plan: free
-  #   runtime: static
-  #   region: oregon
-  #   buildCommand: |
-  #     cd frontend &&
-  #     flutter build web
-  #   staticPublishPath: frontend/build/web
-  #   envVars:
-  #     - key: FLUTTER_WEB_RENDERER
-  #       value: html
-  #     - key: API_BASE_URL
-  #       value: https://todo-app-api.onrender.com
-
-# Optional: Cron jobs for maintenance
-# jobs:
-#   - type: cron
-#     name: cleanup-expired-sessions
-#     schedule: "0 2 * * *"  # Daily at 2 AM
-#     buildCommand: cd backend && pip install -r requirements.txt
-#     startCommand: cd backend && python -c "print('Session cleanup placeholder')"
