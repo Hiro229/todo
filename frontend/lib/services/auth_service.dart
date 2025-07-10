@@ -10,20 +10,14 @@ class AuthService {
   static String get apiUrl => AppConfig.apiBaseUrl;
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock_this_device,
-    ),
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
   );
 
   static const String _tokenKey = 'jwt_token';
   static const String _sessionIdKey = 'session_id';
 
-  static const Map<String, String> headers = {
-    'Content-Type': 'application/json',
-  };
+  static const Map<String, String> headers = {'Content-Type': 'application/json'};
 
   // 現在保存されているトークンを取得
   static Future<String?> getToken() async {
@@ -49,7 +43,7 @@ class AuthService {
   static Future<void> _saveToken(String token) async {
     try {
       await _storage.write(key: _tokenKey, value: token);
-      
+
       // JWTからセッションIDを抽出
       final payload = JwtDecoder.decode(token);
       final sessionId = payload['session_id'] as String?;
@@ -89,10 +83,7 @@ class AuthService {
   // シンプル認証を実行
   static Future<AuthResult> authenticate() async {
     try {
-      final response = await http.post(
-        Uri.parse('$apiUrl/auth/simple'),
-        headers: headers,
-      );
+      final response = await http.post(Uri.parse('$apiUrl/auth/simple'), headers: headers);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -101,22 +92,12 @@ class AuthService {
 
         await _saveToken(token);
 
-        return AuthResult(
-          success: true,
-          token: token,
-          expiresIn: expiresIn,
-        );
+        return AuthResult(success: true, token: token, expiresIn: expiresIn);
       } else {
-        return AuthResult(
-          success: false,
-          error: 'Authentication failed: ${response.statusCode}',
-        );
+        return AuthResult(success: false, error: 'Authentication failed: ${response.statusCode}');
       }
     } catch (e) {
-      return AuthResult(
-        success: false,
-        error: 'Network error: $e',
-      );
+      return AuthResult(success: false, error: 'Network error: $e');
     }
   }
 
@@ -125,18 +106,12 @@ class AuthService {
     try {
       final token = await getToken();
       if (token == null) {
-        return AuthStatusResult(
-          authenticated: false,
-          error: 'No token found',
-        );
+        return AuthStatusResult(authenticated: false, error: 'No token found');
       }
 
       final response = await http.get(
         Uri.parse('$apiUrl/auth/verify'),
-        headers: {
-          ...headers,
-          'Authorization': 'Bearer $token',
-        },
+        headers: {...headers, 'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -150,16 +125,10 @@ class AuthService {
       } else {
         // トークンが無効な場合はクリア
         await clearAuth();
-        return AuthStatusResult(
-          authenticated: false,
-          error: 'Token verification failed',
-        );
+        return AuthStatusResult(authenticated: false, error: 'Token verification failed');
       }
     } catch (e) {
-      return AuthStatusResult(
-        authenticated: false,
-        error: 'Network error: $e',
-      );
+      return AuthStatusResult(authenticated: false, error: 'Network error: $e');
     }
   }
 
@@ -170,10 +139,7 @@ class AuthService {
       throw Exception('No authentication token available');
     }
 
-    return {
-      ...headers,
-      'Authorization': 'Bearer $token',
-    };
+    return {...headers, 'Authorization': 'Bearer $token'};
   }
 
   // トークンの自動更新をチェック
@@ -186,16 +152,16 @@ class AuthService {
       final payload = JwtDecoder.decode(token);
       final exp = payload['exp'] as int;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      
+
       // 有効期限の設定された時間前になったら更新
       final refreshThreshold = AppConfig.tokenRefreshThreshold;
-      
+
       if (exp - now < refreshThreshold) {
         // トークンを更新
         final result = await authenticate();
         return result.success;
       }
-      
+
       return true;
     } catch (e) {
       // エラーが発生した場合は新しく認証
@@ -208,23 +174,35 @@ class AuthService {
   static Future<bool> autoAuthenticate() async {
     try {
       print('AutoAuthenticate: Starting authentication process');
-      print('AutoAuthenticate: API URL = $apiUrl');
-      
+
       // 開発環境では利用可能なサーバーを動的に検出
       if (AppConfig.environment == Environment.development) {
         print('AutoAuthenticate: Attempting to find available dev server');
         final dynamicApiUrl = await AppConfig.getAvailableDevApiUrl();
-        if (dynamicApiUrl != null && dynamicApiUrl != apiUrl) {
-          print('AutoAuthenticate: Found available server at: $dynamicApiUrl');
-          // 動的に検出したURLを使用して認証を試行
-          final result = await _authenticateWithUrl(dynamicApiUrl);
-          if (result.success) {
-            print('AutoAuthenticate: Authentication successful with dynamic URL');
-            return true;
+
+        if (dynamicApiUrl != null) {
+          print('AutoAuthenticate: API URL = $dynamicApiUrl');
+
+          // 静的URLと動的URLが異なる場合のみ特別に処理
+          if (dynamicApiUrl != apiUrl) {
+            print('AutoAuthenticate: Using dynamically detected server');
+            final result = await _authenticateWithUrl(dynamicApiUrl);
+            if (result.success) {
+              print('AutoAuthenticate: Authentication successful with dynamic URL');
+              return true;
+            } else {
+              print('AutoAuthenticate: Dynamic URL authentication failed: ${result.error}');
+            }
           }
+        } else {
+          print('AutoAuthenticate: No available dev server found');
+          print('AutoAuthenticate: Development server appears to be offline');
+          return false; // サーバーが見つからない場合は認証をスキップ
         }
       }
-      
+
+      print('AutoAuthenticate: Using configured API URL = $apiUrl');
+
       // 既存のトークンをチェック
       if (await isTokenValid()) {
         print('AutoAuthenticate: Valid token found, verifying...');
@@ -246,10 +224,20 @@ class AuthService {
       final result = await authenticate();
       if (result.success) {
         print('AutoAuthenticate: New authentication successful');
+        return true;
       } else {
         print('AutoAuthenticate: New authentication failed: ${result.error}');
+
+        // 開発環境でネットワークエラーの場合は詳細情報を表示
+        if (AppConfig.environment == Environment.development &&
+            result.error != null &&
+            result.error!.contains('Network error')) {
+          print('AutoAuthenticate: Development server connection failed');
+          print('AutoAuthenticate: Please ensure the backend server is running');
+        }
+
+        return false;
       }
-      return result.success;
     } catch (e) {
       print('AutoAuthenticate: Exception occurred: $e');
       return false;
@@ -259,10 +247,7 @@ class AuthService {
   // 指定されたURLで認証を試行
   static Future<AuthResult> _authenticateWithUrl(String baseUrl) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/simple'),
-        headers: headers,
-      );
+      final response = await http.post(Uri.parse('$baseUrl/auth/simple'), headers: headers);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -271,22 +256,12 @@ class AuthService {
 
         await _saveToken(token);
 
-        return AuthResult(
-          success: true,
-          token: token,
-          expiresIn: expiresIn,
-        );
+        return AuthResult(success: true, token: token, expiresIn: expiresIn);
       } else {
-        return AuthResult(
-          success: false,
-          error: 'Authentication failed: ${response.statusCode}',
-        );
+        return AuthResult(success: false, error: 'Authentication failed: ${response.statusCode}');
       }
     } catch (e) {
-      return AuthResult(
-        success: false,
-        error: 'Network error: $e',
-      );
+      return AuthResult(success: false, error: 'Network error: $e');
     }
   }
 
@@ -297,7 +272,7 @@ class AuthService {
     if (!isValid) {
       throw Exception('Authentication failed - please restart the app');
     }
-    
+
     return await getAuthHeaders();
   }
 }
@@ -308,12 +283,7 @@ class AuthResult {
   final int? expiresIn;
   final String? error;
 
-  AuthResult({
-    required this.success,
-    this.token,
-    this.expiresIn,
-    this.error,
-  });
+  AuthResult({required this.success, this.token, this.expiresIn, this.error});
 }
 
 class AuthStatusResult {

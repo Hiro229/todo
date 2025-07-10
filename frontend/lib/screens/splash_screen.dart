@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../config/app_config.dart';
 import 'task_list_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -41,10 +42,26 @@ class _SplashScreenState extends State<SplashScreen> {
           ).pushReplacement(MaterialPageRoute(builder: (context) => const TaskListScreen()));
         }
       } else {
-        setState(() {
-          _statusMessage = 'Authentication failed';
-        });
-        _showError('Failed to authenticate. Please check your connection and try again.');
+        // 開発環境でサーバーが利用できない場合の処理
+        if (AppConfig.environment == Environment.development) {
+          setState(() {
+            _statusMessage = 'Development server offline - Working offline';
+          });
+
+          // 開発環境ではオフラインモードで続行
+          await Future.delayed(const Duration(milliseconds: 1000));
+
+          if (mounted) {
+            Navigator.of(
+              context,
+            ).pushReplacement(MaterialPageRoute(builder: (context) => const TaskListScreen()));
+          }
+        } else {
+          setState(() {
+            _statusMessage = 'Authentication failed';
+          });
+          _showError('Failed to authenticate. Please check your connection and try again.');
+        }
       }
     } catch (e) {
       setState(() {
@@ -71,7 +88,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   const SizedBox(height: 8),
                   const Text('• WiFi接続を確認してください'),
                   const Text('• 開発用サーバーが起動していることを確認'),
-                  const Text('• アプリの設定でIPアドレスを確認'),
+                  const Text('• PCとデバイスが同じネットワークにいることを確認'),
+                  const Text('• ファイアウォールの設定を確認'),
                 ],
               ),
               actions: [
@@ -81,6 +99,17 @@ class _SplashScreenState extends State<SplashScreen> {
                   },
                   child: const Text('閉じる'),
                 ),
+                if (AppConfig.environment == Environment.development)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // 開発環境ではオフラインモードで続行
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => const TaskListScreen()),
+                      );
+                    },
+                    child: const Text('オフラインで続行'),
+                  ),
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();

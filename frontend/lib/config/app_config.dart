@@ -28,17 +28,17 @@ class AppConfig {
   static String _getDevApiUrl() {
     // 環境変数から開発用サーバーのIPを取得
     const devServerHost = String.fromEnvironment('DEV_SERVER_HOST');
-    
+
     if (devServerHost.isNotEmpty) {
       return 'http://$devServerHost:8000';
     }
-    
+
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:8000';
     } else if (Platform.isIOS) {
-      // 実機の場合は開発用PCのIPアドレスを使用
-      // 以下のIPアドレスを開発用PCのIPアドレスに置き換えてください
-      return 'http://192.168.10.173:8000';
+      // iOS実機の場合はデフォルトで動的検出を使用
+      // 静的IPはフォールバック用として保持
+      return 'http://192.168.10.178:8000';
     } else {
       return 'http://localhost:8000';
     }
@@ -48,19 +48,29 @@ class AppConfig {
   static Future<String?> getAvailableDevApiUrl() async {
     // 環境変数から開発用サーバーのIPを取得
     const devServerHost = String.fromEnvironment('DEV_SERVER_HOST');
-    
+
     if (devServerHost.isNotEmpty) {
       if (await NetworkUtils.isServerAvailable(devServerHost)) {
         return 'http://$devServerHost:8000';
       }
     }
-    
-    // 利用可能なサーバーIPを自動検出
-    final availableIp = await NetworkUtils.findAvailableDevServer();
-    if (availableIp != null) {
-      return 'http://$availableIp:8000';
+
+    // iOS実機の場合は必ず動的検出を実行
+    if (Platform.isIOS) {
+      final availableIp = await NetworkUtils.findAvailableDevServer();
+      if (availableIp != null) {
+        return 'http://$availableIp:8000';
+      }
     }
-    
+
+    // Android以外のプラットフォームでも動的検出を試行
+    if (!Platform.isAndroid) {
+      final availableIp = await NetworkUtils.findAvailableDevServer();
+      if (availableIp != null) {
+        return 'http://$availableIp:8000';
+      }
+    }
+
     // フォールバック: 静的設定を使用
     return _getDevApiUrl();
   }
