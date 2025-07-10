@@ -19,7 +19,7 @@ services:
       - key: PORT
         value: "10000"
       - key: DATABASE_URL
-        value: postgresql://todo_user:[ACTUAL_PASSWORD]@dpg-d1ks3615pdvs73b82g7g-a.oregon-postgres.render.com:5432/todo_db_22qu
+        value: postgresql://todo_user:[PASSWORD]@dpg-d1ks3615pdvs73b82g7g-a.oregon-postgres.render.com:5432/todo_db_22qu
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: DEBUG

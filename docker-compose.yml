@@ -1,49 +1,69 @@
-# Docker Compose for Development Environment
+# Docker Compose for Production Environment
 services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-todoapp}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - todo-network
+    restart: always
 
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
+      target: production
     environment:
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-todoapp}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-key-not-for-production}
-      DEBUG: ${DEBUG:-true}
+      ENVIRONMENT: production
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      DEBUG: false
       HOST: 0.0.0.0
-      PORT: 8000
+      PORT: ${PORT:-8000}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${PORT:-8000}:${PORT:-8000}"
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - backend_cache:/app/__pycache__
     networks:
       - todo-network
-    restart: unless-stopped
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Nginx reverse proxy (optional for self-hosted)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - todo-network
+    restart: always
 
 volumes:
   postgres_data:
-  backend_cache:
 
 networks:
   todo-network:
