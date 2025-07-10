@@ -1,7 +1,14 @@
 from pydantic_settings import BaseSettings
-from typing import List, Optional
+from typing import List, Optional, Union
 from functools import lru_cache
+from pydantic import field_validator, ValidationError
 import os
+import json
+import logging
+
+# ロギング設定
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     # 環境設定
@@ -34,6 +41,41 @@ class Settings(BaseSettings):
     # Render固有設定
     port: int = 8000
     host: str = "0.0.0.0"
+    
+    @field_validator('cors_origins', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """CORS_ORIGINS環境変数の安全な解析"""
+        if isinstance(v, list):
+            return v
+        
+        if isinstance(v, str):
+            # 空文字列の場合はデフォルト値を使用
+            if not v.strip():
+                logger.warning("CORS_ORIGINS環境変数が空です。デフォルト値を使用します。")
+                return ["*"]
+            
+            # JSON形式の文字列を解析
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                else:
+                    logger.warning(f"CORS_ORIGINS環境変数が配列ではありません: {v}")
+                    return ["*"]
+            except json.JSONDecodeError as e:
+                logger.warning(f"CORS_ORIGINS環境変数のJSON解析に失敗しました: {v}, エラー: {e}")
+                # カンマ区切り文字列として解析を試行
+                try:
+                    origins = [origin.strip() for origin in v.split(',')]
+                    return [origin for origin in origins if origin]
+                except Exception:
+                    logger.error(f"CORS_ORIGINS環境変数の解析に完全に失敗しました: {v}")
+                    return ["*"]
+        
+        # その他の型の場合はデフォルト値
+        logger.warning(f"CORS_ORIGINS環境変数が予期しない型です: {type(v)}")
+        return ["*"]
     
     class Config:
         env_file = f".env.{os.getenv('ENVIRONMENT', 'development')}"
@@ -78,7 +120,13 @@ def get_settings() -> Settings:
     }
     
     settings_class = settings_map.get(environment, DevelopmentSettings)
-    return settings_class()
+    try:
+        return settings_class()
+    except ValidationError as e:
+        logger.error(f"設定の検証に失敗しました: {e}")
+        # フォールバック設定
+        logger.info("デフォルト設定を使用します。")
+        return Settings()
 
 # グローバル設定インスタンス
 settings = get_settings()
