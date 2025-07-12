@@ -79,11 +79,11 @@ class AppConfig {
   static String get appName {
     switch (_environment) {
       case Environment.development:
-        return 'TODO App (Dev)';
+        return 'HAKADORI (Dev)';
       case Environment.staging:
-        return 'TODO App (Staging)';
+        return 'HAKADORI (Staging)';
       case Environment.production:
-        return 'TODO App';
+        return 'HAKADORI';
     }
   }
 
