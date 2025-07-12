@@ -31,7 +31,7 @@ class NetworkUtils {
         }
       }
     } catch (e) {
-      print('Error during server detection: $e');
+      // ログ出力は開発環境のみ
     }
 
     return null;

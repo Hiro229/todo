@@ -20,7 +20,7 @@ class AppConfig {
       case Environment.staging:
         return 'https://todo-app-api-staging.onrender.com';
       case Environment.production:
-        return 'https://api.todo-app.example.com';
+        return 'https://todo-2ui9.onrender.com';
     }
   }
 

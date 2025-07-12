@@ -24,7 +24,7 @@ class AuthService {
     try {
       return await _storage.read(key: _tokenKey);
     } catch (e) {
-      print('Error reading token: $e');
+      if (AppConfig.enableLogging) print('Error reading token: $e');
       return null;
     }
   }
@@ -34,7 +34,7 @@ class AuthService {
     try {
       return await _storage.read(key: _sessionIdKey);
     } catch (e) {
-      print('Error reading session ID: $e');
+      if (AppConfig.enableLogging) print('Error reading session ID: $e');
       return null;
     }
   }
@@ -51,7 +51,7 @@ class AuthService {
         await _storage.write(key: _sessionIdKey, value: sessionId);
       }
     } catch (e) {
-      print('Error saving token: $e');
+      if (AppConfig.enableLogging) print('Error saving token: $e');
       throw Exception('Failed to save authentication token');
     }
   }
@@ -62,7 +62,7 @@ class AuthService {
       await _storage.delete(key: _tokenKey);
       await _storage.delete(key: _sessionIdKey);
     } catch (e) {
-      print('Error clearing auth: $e');
+      if (AppConfig.enableLogging) print('Error clearing auth: $e');
     }
   }
 
@@ -75,7 +75,7 @@ class AuthService {
       // JWTの有効期限をチェック
       return !JwtDecoder.isExpired(token);
     } catch (e) {
-      print('Error checking token validity: $e');
+      if (AppConfig.enableLogging) print('Error checking token validity: $e');
       return false;
     }
   }
@@ -173,73 +173,73 @@ class AuthService {
   // 自動認証 - アプリ起動時に呼び出す
   static Future<bool> autoAuthenticate() async {
     try {
-      print('AutoAuthenticate: Starting authentication process');
+      if (AppConfig.enableLogging) print('AutoAuthenticate: Starting authentication process');
 
       // 開発環境では利用可能なサーバーを動的に検出
       if (AppConfig.environment == Environment.development) {
-        print('AutoAuthenticate: Attempting to find available dev server');
+        if (AppConfig.enableLogging) print('AutoAuthenticate: Attempting to find available dev server');
         final dynamicApiUrl = await AppConfig.getAvailableDevApiUrl();
 
         if (dynamicApiUrl != null) {
-          print('AutoAuthenticate: API URL = $dynamicApiUrl');
+          if (AppConfig.enableLogging) print('AutoAuthenticate: API URL = $dynamicApiUrl');
 
           // 静的URLと動的URLが異なる場合のみ特別に処理
           if (dynamicApiUrl != apiUrl) {
-            print('AutoAuthenticate: Using dynamically detected server');
+            if (AppConfig.enableLogging) print('AutoAuthenticate: Using dynamically detected server');
             final result = await _authenticateWithUrl(dynamicApiUrl);
             if (result.success) {
-              print('AutoAuthenticate: Authentication successful with dynamic URL');
+              if (AppConfig.enableLogging) print('AutoAuthenticate: Authentication successful with dynamic URL');
               return true;
             } else {
-              print('AutoAuthenticate: Dynamic URL authentication failed: ${result.error}');
+              if (AppConfig.enableLogging) print('AutoAuthenticate: Dynamic URL authentication failed: ${result.error}');
             }
           }
         } else {
-          print('AutoAuthenticate: No available dev server found');
-          print('AutoAuthenticate: Development server appears to be offline');
+          if (AppConfig.enableLogging) print('AutoAuthenticate: No available dev server found');
+          if (AppConfig.enableLogging) print('AutoAuthenticate: Development server appears to be offline');
           return false; // サーバーが見つからない場合は認証をスキップ
         }
       }
 
-      print('AutoAuthenticate: Using configured API URL = $apiUrl');
+      if (AppConfig.enableLogging) print('AutoAuthenticate: Using configured API URL = $apiUrl');
 
       // 既存のトークンをチェック
       if (await isTokenValid()) {
-        print('AutoAuthenticate: Valid token found, verifying...');
+        if (AppConfig.enableLogging) print('AutoAuthenticate: Valid token found, verifying...');
         final status = await verifyAuth();
         if (status.authenticated) {
-          print('AutoAuthenticate: Token verified successfully');
+          if (AppConfig.enableLogging) print('AutoAuthenticate: Token verified successfully');
           // トークンの更新が必要かチェック
           await refreshTokenIfNeeded();
           return true;
         } else {
-          print('AutoAuthenticate: Token verification failed: ${status.error}');
+          if (AppConfig.enableLogging) print('AutoAuthenticate: Token verification failed: ${status.error}');
         }
       } else {
-        print('AutoAuthenticate: No valid token found');
+        if (AppConfig.enableLogging) print('AutoAuthenticate: No valid token found');
       }
 
       // 既存のトークンが無効な場合は新しく認証
-      print('AutoAuthenticate: Attempting new authentication');
+      if (AppConfig.enableLogging) print('AutoAuthenticate: Attempting new authentication');
       final result = await authenticate();
       if (result.success) {
-        print('AutoAuthenticate: New authentication successful');
+        if (AppConfig.enableLogging) print('AutoAuthenticate: New authentication successful');
         return true;
       } else {
-        print('AutoAuthenticate: New authentication failed: ${result.error}');
+        if (AppConfig.enableLogging) print('AutoAuthenticate: New authentication failed: ${result.error}');
 
         // 開発環境でネットワークエラーの場合は詳細情報を表示
         if (AppConfig.environment == Environment.development &&
             result.error != null &&
             result.error!.contains('Network error')) {
-          print('AutoAuthenticate: Development server connection failed');
-          print('AutoAuthenticate: Please ensure the backend server is running');
+          if (AppConfig.enableLogging) print('AutoAuthenticate: Development server connection failed');
+          if (AppConfig.enableLogging) print('AutoAuthenticate: Please ensure the backend server is running');
         }
 
         return false;
       }
     } catch (e) {
-      print('AutoAuthenticate: Exception occurred: $e');
+      if (AppConfig.enableLogging) print('AutoAuthenticate: Exception occurred: $e');
       return false;
     }
   }
