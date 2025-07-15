@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/task.dart';
 import '../config/app_config.dart';
-import 'auth_service.dart';
+import 'user_auth_service.dart';
 
 class ApiService {
   static String get apiUrl => AppConfig.apiBaseUrl;
@@ -34,7 +34,7 @@ class ApiService {
       }
 
       final uri = Uri.parse('$apiUrl/api/tasks').replace(queryParameters: queryParams);
-      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final authHeaders = await UserAuthService.getValidatedAuthHeaders();
       final response = await http.get(uri, headers: authHeaders);
 
       if (response.statusCode == 200) {
@@ -51,7 +51,7 @@ class ApiService {
   // 新規タスクを作成
   static Future<Task> createTask(TaskCreate taskCreate) async {
     try {
-      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final authHeaders = await UserAuthService.getValidatedAuthHeaders();
       final response = await http.post(
         Uri.parse('$apiUrl/api/tasks'),
         headers: authHeaders,
@@ -71,7 +71,7 @@ class ApiService {
   // 特定のタスクを取得
   static Future<Task> getTask(int id) async {
     try {
-      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final authHeaders = await UserAuthService.getValidatedAuthHeaders();
       final response = await http.get(
         Uri.parse('$apiUrl/api/tasks/$id'),
         headers: authHeaders,
@@ -90,7 +90,7 @@ class ApiService {
   // タスクを更新
   static Future<Task> updateTask(int id, TaskUpdate taskUpdate) async {
     try {
-      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final authHeaders = await UserAuthService.getValidatedAuthHeaders();
       final response = await http.put(
         Uri.parse('$apiUrl/api/tasks/$id'),
         headers: authHeaders,
@@ -110,7 +110,7 @@ class ApiService {
   // タスクを削除
   static Future<bool> deleteTask(int id) async {
     try {
-      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final authHeaders = await UserAuthService.getValidatedAuthHeaders();
       final response = await http.delete(
         Uri.parse('$apiUrl/api/tasks/$id'),
         headers: authHeaders,
@@ -129,7 +129,7 @@ class ApiService {
   // カテゴリ関連のAPI
   static Future<List<Category>> getCategories() async {
     try {
-      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final authHeaders = await UserAuthService.getValidatedAuthHeaders();
       final response = await http.get(
         Uri.parse('$apiUrl/api/categories'),
         headers: authHeaders,
@@ -148,7 +148,7 @@ class ApiService {
 
   static Future<Category> createCategory(CategoryCreate categoryCreate) async {
     try {
-      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final authHeaders = await UserAuthService.getValidatedAuthHeaders();
       final response = await http.post(
         Uri.parse('$apiUrl/api/categories'),
         headers: authHeaders,
@@ -167,7 +167,7 @@ class ApiService {
 
   static Future<bool> deleteCategory(int id) async {
     try {
-      final authHeaders = await AuthService.getValidatedAuthHeaders();
+      final authHeaders = await UserAuthService.getValidatedAuthHeaders();
       final response = await http.delete(
         Uri.parse('$apiUrl/api/categories/$id'),
         headers: authHeaders,

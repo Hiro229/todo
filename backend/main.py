@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 import models, schemas, crud, database
 from database import SessionLocal, engine
-from auth import get_current_session
-from auth_routes import router as auth_router
+from auth import get_current_session, get_current_user
+from user_routes import router as user_router
 from security import (
     limiter, 
     add_security_headers, 
@@ -50,7 +50,7 @@ def get_db():
         db.close()
 
 # 認証ルーターを登録
-app.include_router(auth_router)
+app.include_router(user_router, prefix="/auth")
 
 @app.get("/")
 def read_root():
@@ -77,29 +77,29 @@ def get_tasks(
     priority: Optional[int] = Query(None, ge=1, le=3, description="優先度 (1=High, 2=Medium, 3=Low)"),
     is_completed: Optional[bool] = Query(None, description="完了状態"),
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
-    """全タスクを条件付きで取得"""
-    tasks = crud.get_tasks(db, search=search, category_id=category_id, priority=priority, is_completed=is_completed)
+    """ユーザーのタスクを条件付きで取得"""
+    tasks = crud.get_tasks(db, user_id=current_user.id, search=search, category_id=category_id, priority=priority, is_completed=is_completed)
     return tasks
 
 @app.post("/api/tasks", response_model=schemas.Task)
 def create_task(
     task: schemas.TaskCreate, 
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
     """新規タスクを作成"""
-    return crud.create_task(db=db, task=task)
+    return crud.create_task(db=db, task=task, user_id=current_user.id)
 
 @app.get("/api/tasks/{task_id}", response_model=schemas.Task)
 def get_task(
     task_id: int, 
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
     """特定のタスクを取得"""
-    db_task = crud.get_task(db, task_id=task_id)
+    db_task = crud.get_task(db, task_id=task_id, user_id=current_user.id)
     if db_task is None:
         raise HTTPException(status_code=404, detail="Task not found")
     return db_task
@@ -109,10 +109,10 @@ def update_task(
     task_id: int, 
     task: schemas.TaskUpdate, 
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
     """タスクを更新"""
-    db_task = crud.update_task(db, task_id=task_id, task=task)
+    db_task = crud.update_task(db, task_id=task_id, task=task, user_id=current_user.id)
     if db_task is None:
         raise HTTPException(status_code=404, detail="Task not found")
     return db_task
@@ -121,10 +121,10 @@ def update_task(
 def delete_task(
     task_id: int, 
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
     """タスクを削除"""
-    success = crud.delete_task(db, task_id=task_id)
+    success = crud.delete_task(db, task_id=task_id, user_id=current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
@@ -133,29 +133,29 @@ def delete_task(
 @app.get("/api/categories", response_model=List[schemas.Category])
 def get_categories(
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
-    """全カテゴリを取得"""
-    categories = crud.get_categories(db)
+    """ユーザーのカテゴリを取得"""
+    categories = crud.get_categories(db, user_id=current_user.id)
     return categories
 
 @app.post("/api/categories", response_model=schemas.Category)
 def create_category(
     category: schemas.CategoryCreate, 
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
     """新規カテゴリを作成"""
-    return crud.create_category(db=db, category=category)
+    return crud.create_category(db=db, category=category, user_id=current_user.id)
 
 @app.get("/api/categories/{category_id}", response_model=schemas.Category)
 def get_category(
     category_id: int, 
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
     """特定のカテゴリを取得"""
-    db_category = crud.get_category(db, category_id=category_id)
+    db_category = crud.get_category(db, category_id=category_id, user_id=current_user.id)
     if db_category is None:
         raise HTTPException(status_code=404, detail="Category not found")
     return db_category
@@ -165,10 +165,10 @@ def update_category(
     category_id: int, 
     category: schemas.CategoryUpdate, 
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
     """カテゴリを更新"""
-    db_category = crud.update_category(db, category_id=category_id, category=category)
+    db_category = crud.update_category(db, category_id=category_id, category=category, user_id=current_user.id)
     if db_category is None:
         raise HTTPException(status_code=404, detail="Category not found")
     return db_category
@@ -177,10 +177,10 @@ def update_category(
 def delete_category(
     category_id: int, 
     db: Session = Depends(get_db),
-    session_info: Dict[str, Any] = Depends(get_current_session)
+    current_user: models.User = Depends(get_current_user)
 ):
     """カテゴリを削除"""
-    success = crud.delete_category(db, category_id=category_id)
+    success = crud.delete_category(db, category_id=category_id, user_id=current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Category not found")
     return {"message": "Category deleted successfully"}

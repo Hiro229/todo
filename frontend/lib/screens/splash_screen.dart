@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import '../services/user_auth_service.dart';
 import '../config/app_config.dart';
 import 'task_list_screen.dart';
+import 'auth_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,45 +23,37 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initializeApp() async {
     try {
       setState(() {
-        _statusMessage = 'Authenticating...';
+        _statusMessage = 'Checking authentication...';
       });
 
-      // 自動認証を実行
-      final success = await AuthService.autoAuthenticate();
+      // 自動ログインを確認
+      final isLoggedIn = await UserAuthService.autoLogin();
 
-      if (success) {
+      if (isLoggedIn) {
         setState(() {
-          _statusMessage = 'Authentication successful!';
+          _statusMessage = 'Welcome back!';
         });
 
         // 短い遅延の後、メイン画面に遷移
         await Future.delayed(const Duration(milliseconds: 500));
 
         if (mounted) {
-          Navigator.of(
-            context,
-          ).pushReplacement(MaterialPageRoute(builder: (context) => const TaskListScreen()));
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const TaskListScreen()),
+          );
         }
       } else {
-        // 開発環境でサーバーが利用できない場合の処理
-        if (AppConfig.environment == Environment.development) {
-          setState(() {
-            _statusMessage = 'Development server offline - Working offline';
-          });
+        setState(() {
+          _statusMessage = 'Please login to continue';
+        });
 
-          // 開発環境ではオフラインモードで続行
-          await Future.delayed(const Duration(milliseconds: 1000));
+        // 短い遅延の後、認証画面に遷移
+        await Future.delayed(const Duration(milliseconds: 500));
 
-          if (mounted) {
-            Navigator.of(
-              context,
-            ).pushReplacement(MaterialPageRoute(builder: (context) => const TaskListScreen()));
-          }
-        } else {
-          setState(() {
-            _statusMessage = 'Authentication failed';
-          });
-          _showError('Failed to authenticate. Please check your connection and try again.');
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const AuthScreen()),
+          );
         }
       }
     } catch (e) {
@@ -75,50 +68,41 @@ class _SplashScreenState extends State<SplashScreen> {
     if (mounted) {
       showDialog(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('接続エラー'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(message),
-                  const SizedBox(height: 16),
-                  const Text('トラブルシューティング：', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text('• WiFi接続を確認してください'),
-                  const Text('• 開発用サーバーが起動していることを確認'),
-                  const Text('• PCとデバイスが同じネットワークにいることを確認'),
-                  const Text('• ファイアウォールの設定を確認'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('閉じる'),
-                ),
-                if (AppConfig.environment == Environment.development)
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // 開発環境ではオフラインモードで続行
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => const TaskListScreen()),
-                      );
-                    },
-                    child: const Text('オフラインで続行'),
-                  ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _initializeApp(); // 再試行
-                  },
-                  child: const Text('再試行'),
-                ),
-              ],
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              const SizedBox(height: 16),
+              const Text('Troubleshooting:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('• Check your internet connection'),
+              const Text('• Ensure the server is running'),
+              const Text('• Check network settings'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // エラー時は認証画面に遷移
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const AuthScreen()),
+                );
+              },
+              child: const Text('Go to Login'),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _initializeApp(); // 再試行
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       );
     }
   }
@@ -134,7 +118,7 @@ class _SplashScreenState extends State<SplashScreen> {
             Icon(Icons.task_alt, size: 80, color: Theme.of(context).colorScheme.onPrimary),
             const SizedBox(height: 24),
             Text(
-              'TODO App',
+              AppConfig.appName,
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/task.dart';
 import '../services/api_service.dart';
+import '../services/user_auth_service.dart';
+import '../models/user.dart';
 import 'task_form_screen.dart';
+import 'profile_screen.dart';
+import 'auth_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -16,6 +20,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   List<Category> _categories = [];
   bool _isLoading = true;
   String? _error;
+  User? _currentUser;
 
   // フィルタリング状態
   String _searchQuery = '';
@@ -28,12 +33,30 @@ class _TaskListScreenState extends State<TaskListScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _loadCurrentUser();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = await UserAuthService.getCurrentUser();
+      setState(() {
+        _currentUser = user;
+      });
+    } catch (e) {
+      // ユーザー情報の取得に失敗した場合はログイン画面に遷移
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -176,15 +199,112 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
+  Future<void> _navigateToProfile() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+    );
+    // プロフィール画面から戻ってきたらユーザー情報を再読み込み
+    _loadCurrentUser();
+  }
+
+  Future<void> _logout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      await UserAuthService.logout();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TODO App'),
+        title: Row(
+          children: [
+            const Text('HAKADORI'),
+            if (_currentUser != null) ...[
+              const Spacer(),
+              Text(
+                'Hello, ${_currentUser!.username}',
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ],
+        ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(icon: const Icon(Icons.filter_list), onPressed: _showFilterDialog),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
+          PopupMenuButton<String>(
+            icon: _currentUser != null
+                ? CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Theme.of(context).primaryColor,
+                    child: Text(
+                      _currentUser!.username.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                : const Icon(Icons.account_circle),
+            onSelected: (value) {
+              switch (value) {
+                case 'profile':
+                  _navigateToProfile();
+                  break;
+                case 'logout':
+                  _logout();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person),
+                    SizedBox(width: 8),
+                    Text('Profile'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 8),
+                    Text('Logout'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: Column(
