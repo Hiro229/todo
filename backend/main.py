@@ -41,13 +41,6 @@ app.add_middleware(
     allow_headers=settings.cors_allow_headers,
 )
 
-# データベース依存関数
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # 認証ルーターを登録
 app.include_router(user_router, prefix="/auth")
