@@ -15,19 +15,40 @@ This is a TODO application with a Flutter frontend and Python FastAPI backend. T
 
 ## Development Commands
 
+### 環境設定
+
+#### 本番環境（Production）
+```bash
+# Flutter - 本番環境用ビルド
+flutter build apk --dart-define=FLUTTER_ENV=production
+flutter build ios --dart-define=FLUTTER_ENV=production
+
+# Backend - 本番環境設定
+export ENVIRONMENT=production
+```
+
+#### 開発環境（Development）
+```bash
+# Flutter - 開発環境用実行
+flutter run --dart-define=FLUTTER_ENV=development
+
+# Backend - 開発環境設定
+export ENVIRONMENT=development
+```
+
 ### Full Stack Development
 
 ```bash
-# Start backend and database services
+# 開発環境: Start backend and database services
 docker-compose up -d
 
-# Check API health
-curl http://localhost:8000/
+# 本番環境: Check API health (Render)
+curl https://todo-2ui9.onrender.com/
 
-# Stop services
+# 開発環境: Stop services
 docker-compose down
 
-# Reset database (remove volumes)
+# 開発環境: Reset database (remove volumes)
 docker-compose down -v
 ```
 
@@ -37,15 +58,18 @@ docker-compose down -v
 # Install dependencies
 flutter pub get
 
-# Run the app in development mode
-flutter run
+# 開発環境: Run the app in development mode
+flutter run --dart-define=FLUTTER_ENV=development
+
+# 本番環境: Run the app in production mode
+flutter run --dart-define=FLUTTER_ENV=production
 
 # Run on specific device
 flutter run -d <device_id>
 
 # Build for release
-flutter build apk       # Android
-flutter build ios       # iOS
+flutter build apk --dart-define=FLUTTER_ENV=production       # Android
+flutter build ios --dart-define=FLUTTER_ENV=production       # iOS
 
 # Run tests
 flutter test
@@ -60,14 +84,17 @@ flutter clean
 ### Backend Development (in `backend/` directory)
 
 ```bash
-# Run locally without Docker
+# 開発環境: Run locally without Docker
 pip install -r requirements.txt
-uvicorn main:app --reload
+ENVIRONMENT=development uvicorn main:app --reload
 
-# Check logs
+# 本番環境: Run in production mode
+ENVIRONMENT=production uvicorn main:app --host 0.0.0.0 --port 8000
+
+# 開発環境: Check logs
 docker-compose logs backend
 
-# Access database
+# 開発環境: Access database
 docker-compose exec db psql -U postgres -d todoapp
 ```
 
@@ -154,9 +181,40 @@ The backend provides full REST API for tasks and categories:
 ## Platform-Specific Notes
 
 ### Flutter API Configuration
+
+#### 開発環境 (Development)
 - **iOS Simulator**: Uses `localhost:8000`
 - **Android Emulator**: Uses `10.0.2.2:8000`
-- **Physical Device**: Needs manual IP configuration
+- **Physical Device**: Uses automatic IP detection or manual configuration
+
+#### 本番環境 (Production)
+- **All Platforms**: Uses `https://todo-2ui9.onrender.com` (Render deployment)
+
+### Environment Variables
+
+#### Flutter Environment Variables
+```bash
+# 開発環境
+FLUTTER_ENV=development
+
+# 本番環境
+FLUTTER_ENV=production
+
+# 開発環境のカスタムサーバーIP（オプション）
+DEV_SERVER_HOST=192.168.1.100
+```
+
+#### Backend Environment Variables
+```bash
+# 開発環境
+ENVIRONMENT=development
+DATABASE_URL=postgresql://postgres:password@db:5432/todoapp
+
+# 本番環境
+ENVIRONMENT=production
+DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/[database]
+JWT_SECRET_KEY=your-production-secret-key
+```
 
 ### Docker Environment
 - PostgreSQL runs on port 5432

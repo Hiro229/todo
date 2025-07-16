@@ -25,44 +25,76 @@
 - Flutter SDK 3.7+
 - Dart 3.0+
 
-### バックエンドの起動
+## 環境設定
 
-1. Docker Composeでバックエンドとデータベースを起動:
+このプロジェクトは**開発環境**と**本番環境**をサポートしています。
+
+### 開発環境 (Development)
+
+**特徴:**
+- ローカルのDockerでバックエンドとデータベースを実行
+- デバッグログが有効
+- ホットリロード対応
+
+**バックエンドの起動:**
 ```bash
+# Docker Composeでバックエンドとデータベースを起動
 docker-compose up -d
-```
 
-2. APIが正常に動作することを確認:
-```bash
+# APIが正常に動作することを確認
 curl http://localhost:8000/
 ```
 
-### フロントエンドの起動
-
-1. frontend ディレクトリに移動:
+**フロントエンドの起動:**
 ```bash
+# frontend ディレクトリに移動
 cd frontend
-```
 
-2. 依存関係をインストール:
-```bash
+# 依存関係をインストール
 flutter pub get
+
+# 開発環境でアプリを実行
+flutter run --dart-define=FLUTTER_ENV=development
 ```
 
-3. アプリを実行:
+### 本番環境 (Production)
+
+**特徴:**
+- RenderのサーバーAPI (`https://todo-2ui9.onrender.com`) に接続
+- 本番用の最適化された設定
+- エラーレポート機能有効
+
+**フロントエンドの起動:**
 ```bash
-flutter run
+# frontend ディレクトリに移動
+cd frontend
+
+# 依存関係をインストール
+flutter pub get
+
+# 本番環境でアプリを実行
+flutter run --dart-define=FLUTTER_ENV=production
+```
+
+**本番用ビルド:**
+```bash
+# Android本番用ビルド
+flutter build apk --dart-define=FLUTTER_ENV=production
+
+# iOS本番用ビルド
+flutter build ios --dart-define=FLUTTER_ENV=production
 ```
 
 ## 開発コマンド
 
 ### バックエンド
 
+#### 開発環境
 ```bash
-# バックエンドのみ起動
+# バックエンドのみ起動（開発環境）
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload
+ENVIRONMENT=development uvicorn main:app --reload
 
 # Docker コンテナの状態確認
 docker-compose ps
@@ -71,21 +103,46 @@ docker-compose ps
 docker-compose logs backend
 ```
 
+#### 本番環境
+```bash
+# バックエンドの本番環境起動
+cd backend
+ENVIRONMENT=production uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
 ### フロントエンド
 
+#### 開発環境
 ```bash
 cd frontend
 
 # 依存関係のインストール
 flutter pub get
 
-# アプリの実行
-flutter run
+# 開発環境でアプリの実行
+flutter run --dart-define=FLUTTER_ENV=development
 
-# 特定のデバイスで実行
-flutter run -d chrome      # Webブラウザ
-flutter run -d android     # Android
-flutter run -d ios         # iOS
+# 特定のデバイスで実行（開発環境）
+flutter run --dart-define=FLUTTER_ENV=development -d chrome      # Webブラウザ
+flutter run --dart-define=FLUTTER_ENV=development -d android     # Android
+flutter run --dart-define=FLUTTER_ENV=development -d ios         # iOS
+```
+
+#### 本番環境
+```bash
+cd frontend
+
+# 本番環境でアプリの実行
+flutter run --dart-define=FLUTTER_ENV=production
+
+# 本番環境用ビルド
+flutter build apk --dart-define=FLUTTER_ENV=production          # Android
+flutter build ios --dart-define=FLUTTER_ENV=production          # iOS
+```
+
+#### 共通コマンド
+```bash
+cd frontend
 
 # コードの解析
 flutter analyze
@@ -93,9 +150,8 @@ flutter analyze
 # テストの実行
 flutter test
 
-# ビルド
-flutter build apk          # Android
-flutter build ios          # iOS
+# ビルドファイルのクリーンアップ
+flutter clean
 ```
 
 ## API エンドポイント
@@ -110,17 +166,34 @@ flutter build ios          # iOS
 
 ### API リクエスト例
 
+#### 開発環境
 ```bash
-# 全タスク取得
+# 全タスク取得（開発環境）
 curl -X GET http://localhost:8000/api/tasks
 
-# タスク作成
+# タスク作成（開発環境）
 curl -X POST http://localhost:8000/api/tasks \
   -H "Content-Type: application/json" \
   -d '{"title": "買い物", "description": "牛乳とパンを買う"}'
 
-# タスク完了状態の更新
+# タスク完了状態の更新（開発環境）
 curl -X PUT http://localhost:8000/api/tasks/1 \
+  -H "Content-Type: application/json" \
+  -d '{"is_completed": true}'
+```
+
+#### 本番環境
+```bash
+# 全タスク取得（本番環境）
+curl -X GET https://todo-2ui9.onrender.com/api/tasks
+
+# タスク作成（本番環境）
+curl -X POST https://todo-2ui9.onrender.com/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title": "買い物", "description": "牛乳とパンを買う"}'
+
+# タスク完了状態の更新（本番環境）
+curl -X PUT https://todo-2ui9.onrender.com/api/tasks/1 \
   -H "Content-Type: application/json" \
   -d '{"is_completed": true}'
 ```
@@ -193,7 +266,14 @@ CREATE TABLE tasks (
 
 ### 環境変数
 
+#### Flutter環境変数
+- `FLUTTER_ENV`: 環境設定 (`development` | `production`)
+- `DEV_SERVER_HOST`: 開発用サーバーのカスタムIP（オプション）
+
+#### Backend環境変数
+- `ENVIRONMENT`: 環境設定 (`development` | `production`)
 - `DATABASE_URL`: PostgreSQL接続URL
+- `JWT_SECRET_KEY`: JWT認証用シークレットキー
 - `POSTGRES_DB`: データベース名
 - `POSTGRES_USER`: データベースユーザー名
 - `POSTGRES_PASSWORD`: データベースパスワード
