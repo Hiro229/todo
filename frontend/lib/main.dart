@@ -6,9 +6,6 @@ void main() {
   // 環境設定を初期化
   AppConfig.initializeEnvironment();
   
-  // 本番環境に設定
-  AppConfig.setEnvironment(Environment.production);
-  
   runApp(const TodoApp());
 }
 

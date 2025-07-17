@@ -38,7 +38,7 @@ class AppConfig {
     } else if (Platform.isIOS) {
       // iOS実機の場合はデフォルトで動的検出を使用
       // 静的IPはフォールバック用として保持
-      return 'http://192.168.10.178:8000';
+      return 'http://192.168.10.187:8000';
     } else {
       return 'http://localhost:8000';
     }

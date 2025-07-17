@@ -26,8 +26,18 @@ class _SplashScreenState extends State<SplashScreen> {
         _statusMessage = 'Checking authentication...';
       });
 
+      if (AppConfig.enableLogging) {
+        print('SplashScreen: Starting initialization');
+        print('SplashScreen: Environment = ${AppConfig.environment}');
+        print('SplashScreen: API URL = ${AppConfig.apiBaseUrl}');
+      }
+
       // 自動ログインを確認
       final isLoggedIn = await UserAuthService.autoLogin();
+
+      if (AppConfig.enableLogging) {
+        print('SplashScreen: AutoLogin result = $isLoggedIn');
+      }
 
       if (isLoggedIn) {
         setState(() {
@@ -57,10 +67,20 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
     } catch (e) {
+      if (AppConfig.enableLogging) {
+        print('SplashScreen: Exception during initialization: $e');
+      }
       setState(() {
         _statusMessage = 'Error occurred';
       });
-      _showError('An error occurred during initialization: $e');
+      
+      // エラーダイアログを表示するか、直接認証画面に遷移
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+        );
+      }
     }
   }
 

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 import models, schemas, crud, database
-from database import SessionLocal, engine
+from database import SessionLocal, engine, get_db
 from auth import get_current_session, get_current_user
 from user_routes import router as user_router
 from security import (
