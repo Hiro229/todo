@@ -39,7 +39,7 @@
 **バックエンドの起動:**
 ```bash
 # Docker Composeでバックエンドとデータベースを起動
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml up -d
 
 # APIが正常に動作することを確認
 curl http://localhost:8000/
@@ -97,10 +97,10 @@ pip install -r requirements.txt
 ENVIRONMENT=development uvicorn main:app --reload
 
 # Docker コンテナの状態確認
-docker-compose ps
+docker-compose -f docker-compose.dev.yml ps
 
 # ログの確認
-docker-compose logs backend
+docker-compose -f docker-compose.dev.yml logs backend
 ```
 
 #### 本番環境
@@ -153,6 +153,48 @@ flutter test
 # ビルドファイルのクリーンアップ
 flutter clean
 ```
+
+### IDE設定（Cursor / VS Code）
+
+#### デバッグ実行設定
+
+CursorやVS Codeで環境変数を含めてデバッグ実行するには、以下の設定が`.vscode/launch.json`に含まれています：
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "frontend (development)",
+      "cwd": "frontend",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=FLUTTER_ENV=development"
+      ]
+    },
+    {
+      "name": "frontend (production)",
+      "cwd": "frontend",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=FLUTTER_ENV=production"
+      ]
+    }
+  ]
+}
+```
+
+#### 使用方法
+
+1. **Run and Debug**パネルを開く（Ctrl+Shift+D / Cmd+Shift+D）
+2. 上部のドロップダウンから実行したい環境を選択：
+   - **frontend (development)** - 開発環境
+   - **frontend (production)** - 本番環境
+3. 再生ボタンをクリックするか、F5キーを押して実行
+
+これにより、選択した環境設定でFlutterアプリが起動されます。
 
 ## API エンドポイント
 

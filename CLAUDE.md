@@ -40,16 +40,16 @@ export ENVIRONMENT=development
 
 ```bash
 # 開発環境: Start backend and database services
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml up -d
 
 # 本番環境: Check API health (Render)
 curl https://todo-2ui9.onrender.com/
 
 # 開発環境: Stop services
-docker-compose down
+docker-compose -f docker-compose.dev.yml down
 
 # 開発環境: Reset database (remove volumes)
-docker-compose down -v
+docker-compose -f docker-compose.dev.yml down -v
 ```
 
 ### Flutter Frontend (in `frontend/` directory)
@@ -92,10 +92,10 @@ ENVIRONMENT=development uvicorn main:app --reload
 ENVIRONMENT=production uvicorn main:app --host 0.0.0.0 --port 8000
 
 # 開発環境: Check logs
-docker-compose logs backend
+docker-compose -f docker-compose.dev.yml logs backend
 
 # 開発環境: Access database
-docker-compose exec db psql -U postgres -d todoapp
+docker-compose -f docker-compose.dev.yml exec db psql -U postgres -d todoapp
 ```
 
 ## API Endpoints

@@ -100,9 +100,23 @@ class UserAuthService {
         );
       } else {
         final error = json.decode(response.body);
+        String errorMessage = 'Registration failed';
+        
+        if (error['detail'] != null) {
+          if (error['detail'] is List) {
+            // バリデーションエラーの場合（422エラー）
+            final details = error['detail'] as List;
+            if (details.isNotEmpty) {
+              errorMessage = details.first['msg'] ?? errorMessage;
+            }
+          } else {
+            errorMessage = error['detail'];
+          }
+        }
+        
         return AuthResult(
           success: false,
-          error: error['detail'] ?? 'Registration failed',
+          error: errorMessage,
         );
       }
     } catch (e) {
@@ -132,9 +146,23 @@ class UserAuthService {
         );
       } else {
         final error = json.decode(response.body);
+        String errorMessage = 'Login failed';
+        
+        if (error['detail'] != null) {
+          if (error['detail'] is List) {
+            // バリデーションエラーの場合（422エラー）
+            final details = error['detail'] as List;
+            if (details.isNotEmpty) {
+              errorMessage = details.first['msg'] ?? errorMessage;
+            }
+          } else {
+            errorMessage = error['detail'];
+          }
+        }
+        
         return AuthResult(
           success: false,
-          error: error['detail'] ?? 'Login failed',
+          error: errorMessage,
         );
       }
     } catch (e) {
@@ -155,7 +183,7 @@ class UserAuthService {
         return AuthStatusResult(authenticated: false, error: 'No token found');
       }
 
-      final response = await http.get(
+      final response = await http.post(
         Uri.parse('$apiUrl/auth/verify-token'),
         headers: {...headers, 'Authorization': 'Bearer $token'},
       );
@@ -202,9 +230,23 @@ class UserAuthService {
         );
       } else {
         final error = json.decode(response.body);
+        String errorMessage = 'Profile update failed';
+        
+        if (error['detail'] != null) {
+          if (error['detail'] is List) {
+            // バリデーションエラーの場合（422エラー）
+            final details = error['detail'] as List;
+            if (details.isNotEmpty) {
+              errorMessage = details.first['msg'] ?? errorMessage;
+            }
+          } else {
+            errorMessage = error['detail'];
+          }
+        }
+        
         return UserUpdateResult(
           success: false,
-          error: error['detail'] ?? 'Profile update failed',
+          error: errorMessage,
         );
       }
     } catch (e) {
